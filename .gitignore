@@ -1,0 +1,23 @@
+########################
+# Node / npm / yarn
+########################
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+########################
+# Env files
+########################
+.env
+.env.*
+!.env.example
+
+########################
+# OS / Editor
+########################
+.DS_Store
+Thumbs.db
+.vscode/
+
