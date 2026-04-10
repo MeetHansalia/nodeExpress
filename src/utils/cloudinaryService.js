@@ -7,7 +7,7 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const uploadVideoToCloudinary = async (localFilePath) => {
+export const uploadImageToCloudinary = async (localFilePath) => {
     try {
         if (!localFilePath) return null;
         const response = await cloudinary.uploader.upload(localFilePath, {
@@ -18,7 +18,7 @@ export const uploadVideoToCloudinary = async (localFilePath) => {
         return response;
     } catch (error) {
         fs.unlinkSync(localFilePath); // delete the file from the local filesystem
-        console.error("Error uploading video to Cloudinary", error);
+        console.error("Error uploading image to Cloudinary", error);
         return null;
     } finally {
         fs.unlinkSync(localFilePath);
