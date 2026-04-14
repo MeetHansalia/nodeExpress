@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
 import { uploadImageToCloudinary } from "../utils/cloudinaryService.js";
 
-export const registerUser = asyncHandler(async (req, res, next) => {
+export const registerUser = asyncHandler(async (req, res) => {
     //get user details from request body
     // validate request body
     // check if user already exists:username and email
@@ -23,13 +23,10 @@ export const registerUser = asyncHandler(async (req, res, next) => {
     }
 
     //2
-    User.findOne({ $or: [{ userName }, { email }] }).then((user) => {
-        if (user) {
-            throw new ApiError(409, "User already exists");
-        }
-    }).catch((error) => {
-        throw new ApiError(500, "Internal server error");
-    });
+    const existingUser = await User.findOne({ $or: [{ userName }, { email }] });
+    if (existingUser) {
+        throw new ApiError(409, "User already exists");
+    }
 
     //3
     const avatar = req.files?.avatar[0]?.path;
@@ -42,23 +39,29 @@ export const registerUser = asyncHandler(async (req, res, next) => {
     //4
     const uploadedAvatar = await uploadImageToCloudinary(avatar);
     const uploadedCoverImage = await uploadImageToCloudinary(coverImage);
+    if (!uploadedAvatar?.url || !uploadedCoverImage?.url) {
+        throw new ApiError(500, "Failed to upload images");
+    }
 
-    const user = await User.create({
-        userName: userName.toLowerCase(),
-        email: email.toLowerCase(),
-        fullName: fullName.toLowerCase().trim(),
-        avatar: uploadedAvatar.url,
-        coverImage: uploadedCoverImage.url,
-        password: password.trim(),
-    }).then((user) => {
-        res.status(201).json(new ApiResponse(201, user, "User registered successfully"));
-    }).catch((error) => {
-        throw new ApiError(500, "Failed to create user", error);
-    });
+    let user;
+    try {
+        user = await User.create({
+            userName: userName.toLowerCase(),
+            email: email.toLowerCase(),
+            fullName: fullName.toLowerCase().trim(),
+            avatar: uploadedAvatar.url,
+            coverImage: uploadedCoverImage.url,
+            password: password.trim(),
+        });
+    } catch (error) {
+        if (error?.code === 11000) {
+            throw new ApiError(409, "Username or email already exists");
+        }
+        throw new ApiError(500, error?.message || "Failed to create user");
+    }
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
     if (!createdUser) {
-
         throw new ApiError(500, "Failed to create user");
     }
     return res.status(201).json(new ApiResponse(200, createdUser, "User registered successfully"));

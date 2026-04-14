@@ -3,11 +3,12 @@ import fs from "fs";
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
+    api_key: process.env.CLOUDINARY_CLOUD_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 export const uploadImageToCloudinary = async (localFilePath) => {
+    console.log("sdfgjdfjk======", process.env.CLOUDINARY_CLOUD_KEY)
     try {
         if (!localFilePath) return null;
         const response = await cloudinary.uploader.upload(localFilePath, {
@@ -17,10 +18,14 @@ export const uploadImageToCloudinary = async (localFilePath) => {
         console.log("File uploaded successfully to Cloudinary", response.url);
         return response;
     } catch (error) {
-        fs.unlinkSync(localFilePath); // delete the file from the local filesystem
+        if (localFilePath && fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath); // delete the file from the local filesystem
+        }
         console.error("Error uploading image to Cloudinary", error);
         return null;
     } finally {
-        fs.unlinkSync(localFilePath);
+        if (localFilePath && fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
+        }
     }
 };
